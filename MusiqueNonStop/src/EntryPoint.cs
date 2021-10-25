@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Reflection;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Kumodatsu.MusiqueNonStop;
@@ -17,52 +15,15 @@ if (config is null) {
     return -1;
 }
 
-DiscordSocketClient client          = new();
-CommandService      command_service = new();
-IServiceProvider    services        = new ServiceCollection()
-    .AddSingleton(client)
-    .AddSingleton(command_service)
+IServiceProvider services = new ServiceCollection()
+    .AddSingleton<DiscordSocketClient>()
+    .AddSingleton<CommandService>()
+    .AddSingleton(config)
     .AddLavaNode(config => config.SelfDeaf = false)
     .BuildServiceProvider();
 
-client.Log   += LogAsync;
-client.Ready += OnReadyAsync;
-await RegisterCommandsAsync();
-await client.LoginAsync(TokenType.Bot, config.Token);
-await client.StartAsync();
+Bot bot = new Bot(services);
+await bot.StartAsync();
 await Task.Delay(-1);
 
 return 0;
-
-async Task RegisterCommandsAsync() {
-    client.MessageReceived += HandleCommandAsync;
-    await command_service
-        .AddModulesAsync(Assembly.GetEntryAssembly(), services);
-}
-
-async Task HandleCommandAsync(SocketMessage socket_message) {
-    if (socket_message is SocketUserMessage message) {
-        var context = new SocketCommandContext(client, message);
-        if (message.Author.IsBot)
-            return;
-        int arg_pos = 0;
-        if (message.HasStringPrefix(config.CommandPrefix, ref arg_pos)) {
-            var result = await command_service
-                .ExecuteAsync(context, arg_pos, services);
-            if (!result.IsSuccess)
-                Console.WriteLine("AAAAAAAAAAH!");
-        }
-    }
-}
-
-async Task LogAsync(LogMessage message) {
-    Console.WriteLine(message);
-    await Task.CompletedTask;
-}
-
-async Task OnReadyAsync() {
-    var lava = services.GetRequiredService<LavaNode>();
-    if (lava is not null && !lava.IsConnected)
-        await lava.ConnectAsync();
-}
-
