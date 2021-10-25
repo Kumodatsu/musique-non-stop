@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Discord;
+using Victoria;
 
 const string CommandPrefix = "//";
 const string ConfigPath    = "data/config.json";
@@ -21,9 +22,11 @@ CommandService      command_service = new();
 IServiceProvider    services        = new ServiceCollection()
     .AddSingleton(client)
     .AddSingleton(command_service)
+    .AddLavaNode(config => config.SelfDeaf = false)
     .BuildServiceProvider();
 
-client.Log += Log;
+client.Log   += LogAsync;
+client.Ready += OnReadyAsync;
 await RegisterCommandsAsync();
 await client.LoginAsync(TokenType.Bot, config.Token);
 await client.StartAsync();
@@ -52,8 +55,15 @@ async Task HandleCommandAsync(SocketMessage socket_message) {
     }
 }
 
-async Task Log(LogMessage message) {
+async Task LogAsync(LogMessage message) {
     Console.WriteLine(message);
     await Task.CompletedTask;
+}
+
+async Task OnReadyAsync() {
+    var lava = services.GetRequiredService<LavaNode>();
+    System.Console.WriteLine($"Heya. {lava is not null}");
+    if (lava is not null && !lava.IsConnected)
+        await lava.ConnectAsync();
 }
 
