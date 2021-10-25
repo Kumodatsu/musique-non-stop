@@ -1,7 +1,7 @@
 using System.IO;
 using Newtonsoft.Json;
 
-namespace MusiqueNonStop {
+namespace Kumodatsu.MusiqueNonStop {
 
     record Config([JsonProperty("token")] string Token) {
         public static Config? FromFile(string path) {

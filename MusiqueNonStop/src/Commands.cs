@@ -4,7 +4,7 @@ using Discord;
 using Discord.Commands;
 using Victoria;
 
-namespace MusiqueNonStop {
+namespace Kumodatsu.MusiqueNonStop {
 
     public class Commands : ModuleBase<SocketCommandContext> {
 

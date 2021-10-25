@@ -1,16 +1,17 @@
 ﻿using System;
+using System.Reflection;
+using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using System.Threading.Tasks;
+using Kumodatsu.MusiqueNonStop;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
-using Discord;
 using Victoria;
 
 const string CommandPrefix = "//";
 const string ConfigPath    = "data/config.json";
 
-var config = MusiqueNonStop.Config.FromFile(ConfigPath);
+var config = Config.FromFile(ConfigPath);
 
 if (config is null) {
     Console.WriteLine("Could not read config file.");
