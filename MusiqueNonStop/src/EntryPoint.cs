@@ -8,8 +8,7 @@ using Kumodatsu.MusiqueNonStop;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 
-const string CommandPrefix = "//";
-const string ConfigPath    = "data/config.json";
+const string ConfigPath = "data/config.json";
 
 var config = Config.FromFile(ConfigPath);
 
@@ -47,7 +46,7 @@ async Task HandleCommandAsync(SocketMessage socket_message) {
         if (message.Author.IsBot)
             return;
         int arg_pos = 0;
-        if (message.HasStringPrefix(CommandPrefix, ref arg_pos)) {
+        if (message.HasStringPrefix(config.CommandPrefix, ref arg_pos)) {
             var result = await command_service
                 .ExecuteAsync(context, arg_pos, services);
             if (!result.IsSuccess)
@@ -63,7 +62,6 @@ async Task LogAsync(LogMessage message) {
 
 async Task OnReadyAsync() {
     var lava = services.GetRequiredService<LavaNode>();
-    System.Console.WriteLine($"Heya. {lava is not null}");
     if (lava is not null && !lava.IsConnected)
         await lava.ConnectAsync();
 }
