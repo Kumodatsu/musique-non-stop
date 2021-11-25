@@ -23,9 +23,30 @@ namespace Kumodatsu.MusiqueNonStop {
             this.services = services;
 
             var client = GetClient();
-            client.Ready           += OnReadyAsync;
-            client.MessageReceived += OnMessageReceivedAsync;
-            client.Log             += OnLogAsync;
+            client.UserVoiceStateUpdated += OnUserVoiceStateUpdatedAsync;
+        }
+
+        private async Task OnUserVoiceStateUpdatedAsync(
+            SocketUser       user,
+            SocketVoiceState old_state,
+            SocketVoiceState new_state
+        ) {
+            var client = GetClient();
+            var lava   = GetLavaNode();
+            try {
+                var voice_channel = old_state.VoiceChannel;
+                if (voice_channel is null)
+                    return;
+                var users = voice_channel.Users;
+                // Make the bot leave the voice chat when alone
+                if (users.Count == 1 && users.First().Id == client.CurrentUser.Id)
+                    await LeaveAsync(voice_channel.Guild);
+            } catch (Exception exception) {
+                await SendExceptionAsync(
+                    lava.GetPlayer(old_state.VoiceChannel.Guild).TextChannel,
+                    exception
+                );
+            }            
         }
 
         public async Task StartAsync() {
