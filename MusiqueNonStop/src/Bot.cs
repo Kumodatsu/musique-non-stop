@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -23,7 +24,21 @@ namespace Kumodatsu.MusiqueNonStop {
             this.services = services;
 
             var client = GetClient();
+            var lava   = GetLavaNode();
+            client.Ready                 += OnReadyAsync;
+            client.MessageReceived       += OnMessageReceivedAsync;
+            client.Log                   += OnLogAsync;
             client.UserVoiceStateUpdated += OnUserVoiceStateUpdatedAsync;
+            lava.OnTrackEnded            += OnTrackEndedAsync;
+            lava.OnTrackException        += OnTrackExceptionAsync;
+        }
+
+        private async Task OnTrackExceptionAsync(TrackExceptionEventArgs arg) {
+            var channel = arg.Player.TextChannel;
+            await SendMessageAsync(
+                channel,
+                $"Oopsie woopsie! Something went brokey wokey:\n{arg.ErrorMessage}"
+            );
         }
 
         private async Task OnUserVoiceStateUpdatedAsync(
@@ -53,8 +68,6 @@ namespace Kumodatsu.MusiqueNonStop {
             var client   = GetClient();
             var config   = GetConfig();
             var commands = GetCommands();
-            var lava     = GetLavaNode();
-            lava.OnTrackEnded += OnTrackEndedAsync;
             await commands.AddModuleAsync<Commands>(services);
             await client.LoginAsync(TokenType.Bot, config.Token);
             await client.StartAsync();
@@ -157,16 +170,18 @@ namespace Kumodatsu.MusiqueNonStop {
             IGuild        guild,
             ITextChannel? channel = null
         ) {
+            var lava   = GetLavaNode();
+            var player = lava.GetPlayer(guild);
             try {
-                var lava = GetLavaNode();
-                var player = lava.GetPlayer(guild);
                 if (player.PlayerState is PlayerState.Playing)
                     await player.StopAsync();
                 await lava.LeaveAsync(player.VoiceChannel);
             } catch (InvalidOperationException exception) {
                 await LogAsync(exception.Message);
-                if (channel is not null)
-                    await SendExceptionAsync(channel, exception);
+                await SendExceptionAsync(
+                    channel ?? player.TextChannel,
+                    exception
+                );
             }
         }
 
@@ -240,6 +255,25 @@ namespace Kumodatsu.MusiqueNonStop {
             await TryPlayNextAsync(player);
         }
 
+        public async Task ShowQueueAsync(
+            SocketGuildUser user,
+            IGuild          guild
+        ) {
+            var lava    = GetLavaNode();
+            var player  = lava.GetPlayer(guild);
+            var builder = new StringBuilder();
+            if (player.PlayerState is PlayerState.Playing)
+                builder.AppendLine($"Now playing: {player.Track.Title}");
+            if (player.Queue.Count == 0) {
+                builder.AppendLine("The queue is empty.");
+            } else {
+                builder.AppendLine("In queue:");
+                foreach (var track in player.Queue)
+                    builder.AppendLine($"- {track.Title}");
+            }
+            await SendMessageAsync(player.TextChannel, builder.ToString());
+        }
+
         private async Task<bool> TryPlayNextAsync(LavaPlayer player) {
             if (player.Queue.TryDequeue(out var track)) {
                 await player.TextChannel.SendMessageAsync(
@@ -252,10 +286,8 @@ namespace Kumodatsu.MusiqueNonStop {
         }
 
         private async Task OnTrackEndedAsync(TrackEndedEventArgs args) {
-            if (args.Reason is not
-                    (TrackEndReason.Finished or TrackEndReason.Stopped))
-                return;
-            await TryPlayNextAsync(args.Player);
+            if (args.Reason is TrackEndReason.Finished)
+                await TryPlayNextAsync(args.Player);
         }
 
         private async Task<IUserMessage> SendMessageAsync(

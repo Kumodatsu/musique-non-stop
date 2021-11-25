@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -58,10 +59,33 @@ namespace Kumodatsu.MusiqueNonStop {
                 Context.Channel as ITextChannel
             );
 
+        [Command("queue"), Summary("Shows the current song queue.")]
+        public async Task ShowQueue()
+            => await Bot.Instance.ShowQueueAsync(
+                (Context.User as SocketGuildUser)!,
+                Context.Guild
+            );
+
+        [Command("help"), Summary("Displays the list of commands.")]
+        public async Task ShowCommandList() {
+            var command_service = GetCommandService();
+
+            var commands = command_service.Commands;
+            var builder  = new EmbedBuilder();
+            foreach (var command in commands)
+                builder.AddField(
+                    command.Name,
+                    command.Summary ?? "(no description)"
+                );
+            await ReplyAsync(embed: builder.Build());
+        }
+
         private readonly IServiceProvider services;
 
         private LavaNode GetLavaNode()
             => services.GetRequiredService<LavaNode>();
+        private CommandService GetCommandService()
+            => services.GetRequiredService<CommandService>();
 
     }
 
