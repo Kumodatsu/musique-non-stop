@@ -1,15 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
-using Victoria.Enums;
-using Victoria.EventArgs;
-using Victoria.Responses.Search;
 
 namespace Kumodatsu.MusiqueNonStop {
 
