@@ -19,6 +19,7 @@ namespace Kumodatsu.MusiqueNonStop {
             => this.services = services;
 
         [Command("ping")]
+        [Summary("Triggers a response from the bot. Useful to test latency.")]
         public async Task PingAsync() => await ReplyAsync("Pong!");
 
         [Command("join"), Summary("Makes the bot join your voice channel.")]
