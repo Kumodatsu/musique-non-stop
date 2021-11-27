@@ -35,8 +35,7 @@ internal sealed class Bot {
 
     private async Task OnTrackExceptionAsync(TrackExceptionEventArgs arg) {
         var channel = arg.Player.TextChannel;
-        await SendMessageAsync(
-            channel,
+        await channel.SendMessageAsync(
             $"Oopsie woopsie! Something went brokey wokey:\n{arg.ErrorMessage}"
         );
     }
@@ -125,8 +124,7 @@ internal sealed class Bot {
     private async Task<IUserMessage> SendExceptionAsync(
         ITextChannel channel,
         Exception    exception
-    ) => await SendMessageAsync(
-        channel,
+    ) => await channel.SendMessageAsync(
         $"```Exception: {exception.Message}"
         + $"\n{exception.StackTrace ?? string.Empty}"
         + "```"
@@ -139,7 +137,7 @@ internal sealed class Bot {
     ) {
         async Task reply(string msg) {
             if (channel is not null)
-                await SendMessageAsync(channel, msg);
+                await channel.SendMessageAsync(msg);
         };
 
         var lava = GetLavaNode();
@@ -193,7 +191,7 @@ internal sealed class Bot {
     ) {
         async Task reply(string msg) {
             if (channel is not null)
-                await SendMessageAsync(channel, msg);
+                await channel.SendMessageAsync(msg);
         };
 
         if (user.VoiceChannel is null) {
@@ -274,7 +272,7 @@ internal sealed class Bot {
             foreach (var track in player.Queue)
                 builder.AppendLine($"- {track.Title}");
         }
-        await SendMessageAsync(player.TextChannel, builder.ToString());
+        await player.TextChannel.SendMessageAsync(builder.ToString());
     }
 
     private async Task<bool> TryPlayNextAsync(LavaPlayer player) {
@@ -292,10 +290,5 @@ internal sealed class Bot {
         if (args.Reason is TrackEndReason.Finished)
             await TryPlayNextAsync(args.Player);
     }
-
-    private async Task<IUserMessage> SendMessageAsync(
-        ITextChannel channel,
-        string       message
-    ) => await channel.SendMessageAsync(message);
 
 }
