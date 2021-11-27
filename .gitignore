@@ -1,4 +1,4 @@
 .vscode/
 bin/
 obj/
-data/
+config.yml

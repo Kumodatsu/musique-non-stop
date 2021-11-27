@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -6,12 +7,17 @@ using Kumodatsu.MusiqueNonStop;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 
-const string ConfigPath = "data/config.json";
+const string ConfigPath = "config.yml";
 
-var config = Config.FromFile(ConfigPath);
-
-if (config is null) {
-    Console.WriteLine("Could not read config file.");
+Config config;
+try {
+    config = Config.FromFile(ConfigPath);
+} catch (FileNotFoundException) {
+    Console.WriteLine("The config file could not be found.");
+    return -1;
+} catch (ParseException exception) {
+    Console.WriteLine($"Something went wrong while reading the config file:");
+    Console.WriteLine(exception.Message);
     return -1;
 }
 

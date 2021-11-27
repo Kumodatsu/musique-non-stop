@@ -18,22 +18,19 @@ Lavalink itself requires Java. See its documentation on how to set up
 
 ### Configuration
 The bot requires a configuration with certain information to exist. The
-configuration file must be a [JSON][4] file with the exact path of
-`MusiqueNonStop/data/config.json`. The file must contain a single JSON object
-with the following keys:
+configuration file must be a [YAML][4] file with the exact path of
+`MusiqueNonStop/config.yml`. The file must contain the following keys:
 
 Key            | Description
 ---------------|-------------
 token          | Your bot's token.
-command_prefix | The desired prefix for the bot's commands.
+command-prefix | The desired prefix for the bot's commands.
 
 Example of a valid configuration file:
 
-```json
-{
-    "token": "your bot's token here",
-    "command_prefix": "//"
-}
+```yml
+token: your bot's token here
+command-prefix: //
 ```
 
 ### Building
@@ -100,4 +97,4 @@ be selected.
 [1]: <https://dotnet.microsoft.com/download/dotnet/6.0>
 [2]: <https://discord.com/developers/applications>
 [3]: <https://github.com/freyacodes/Lavalink>
-[4]: <https://www.json.org/>
+[4]: <https://yaml.org/>
