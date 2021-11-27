@@ -36,7 +36,7 @@ internal sealed class Bot {
     private async Task OnTrackExceptionAsync(TrackExceptionEventArgs arg) {
         var channel = arg.Player.TextChannel;
         await channel.SendMessageAsync(
-            $"Oopsie woopsie! Something went brokey wokey:\n{arg.ErrorMessage}"
+            $"Something went went wrong:\n{arg.ErrorMessage}"
         );
     }
 
