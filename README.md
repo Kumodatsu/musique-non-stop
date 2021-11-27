@@ -8,7 +8,7 @@ unless otherwise specified.
 
 ### Prerequisites
 To build and run this project you need the following:
-- [.NET SDK version 5.0.0][1]  or greater.
+- [.NET SDK version 6.0.0][1]  or greater.
 - You need a Discord bot token. If you don't have one yet, [create a new
 Discord application][2] and add a bot to it.
 - For the bot to play any audio, you need to run a [Lavalink][3] server.
@@ -97,7 +97,7 @@ Queries must be either a direct YouTube URL to a video with the desired audio,
 or any text to search for on YouTube; in the latter case, the first result will
 be selected.
 
-[1]: <https://dotnet.microsoft.com/download/dotnet/5.0>
+[1]: <https://dotnet.microsoft.com/download/dotnet/6.0>
 [2]: <https://discord.com/developers/applications>
 [3]: <https://github.com/freyacodes/Lavalink>
 [4]: <https://www.json.org/>
