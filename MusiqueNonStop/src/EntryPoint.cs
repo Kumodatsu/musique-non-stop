@@ -1,35 +1,65 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using CommandLine;
 using Discord.Commands;
 using Discord.WebSocket;
 using Kumodatsu.MusiqueNonStop;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 
-const string ConfigPath = "config.yml";
+await Parser.Default.ParseArguments<CommandLineArgs>(args)
+    .MapResult(WithValidArgs, WithInvalidArgs);
 
-Config config;
-try {
-    config = Config.FromFile(ConfigPath);
-} catch (FileNotFoundException) {
-    Console.WriteLine("The config file could not be found.");
-    return -1;
-} catch (ParseException exception) {
-    Console.WriteLine($"Something went wrong while reading the config file:");
-    Console.WriteLine(exception.Message);
-    return -1;
+async Task WithValidArgs(CommandLineArgs args) {
+    Config config;
+    try {
+        config = Config.FromFile(args.ConfigPath);
+    } catch (FileNotFoundException) {
+        Console.Error.WriteLine(
+            $"The config file \"{args.ConfigPath}\" could not be found."
+        );
+        Exit(ExitCode.InvalidCommandLineArgs);
+        return;
+    } catch (ParseException exception) {
+        Console.Error.WriteLine(
+            $"Something went wrong reading the config:\n{exception.Message}"
+        );
+        Exit(ExitCode.InvalidCommandLineArgs);
+        return;
+    }
+
+    IServiceProvider services = new ServiceCollection()
+        .AddSingleton<DiscordSocketClient>()
+        .AddSingleton<CommandService>()
+        .AddSingleton(config)
+        .AddLavaNode(config => config.SelfDeaf = false)
+        .BuildServiceProvider();
+
+    Bot bot = new Bot(services);
+    await bot.StartAsync();
+    await Task.Delay(-1);
 }
 
-IServiceProvider services = new ServiceCollection()
-    .AddSingleton<DiscordSocketClient>()
-    .AddSingleton<CommandService>()
-    .AddSingleton(config)
-    .AddLavaNode(config => config.SelfDeaf = false)
-    .BuildServiceProvider();
+async Task WithInvalidArgs(IEnumerable<Error> errors) {
+    // The command parsing library handles --help and --version as errors.
+    // Only return a non-success exit code if there are any 'actual' errors.
+    if (errors.Any(error => error.Tag
+        is  not ErrorType.HelpRequestedError
+        and not ErrorType.VersionRequestedError
+    )) {
+        Exit(ExitCode.InvalidCommandLineArgs);
+    } else {
+        Exit(ExitCode.Success);
+    }
+    await Task.CompletedTask;
+}
 
-Bot bot = new Bot(services);
-await bot.StartAsync();
-await Task.Delay(-1);
+void Exit(ExitCode exit_code) => Environment.Exit((int) exit_code);
 
-return 0;
+enum ExitCode {
+    Success                = 0,
+    InvalidCommandLineArgs = 1
+}

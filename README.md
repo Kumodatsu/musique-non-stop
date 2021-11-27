@@ -18,8 +18,7 @@ Lavalink itself requires Java. See its documentation on how to set up
 
 ### Configuration
 The bot requires a configuration with certain information to exist. The
-configuration file must be a [YAML][4] file with the exact path of
-`MusiqueNonStop/config.yml`. The file must contain the following keys:
+configuration file must be a [YAML][4] file containing the following keys:
 
 Key            | Description
 ---------------|-------------
@@ -42,14 +41,21 @@ where `<CONFIGURATION>` is one of `Debug`, `Release` depending on which
 configuration you want to build.
 
 ### Running
-Run the following command from the `MusiqueNonStop` folder:
+To use the bot's audio functionality you must have a Lavalink server set up and
+running (see the [prerequisites](#prerequisites)). Once this is done, run the
+following command from the `MusiqueNonStop` folder:
 
-    dotnet run -c <CONFIGURATION>
+    dotnet run -c <CONFIGURATION> -- <ARGS>
 
 where `<CONFIGURATION>` is one of `Debug`, `Release` depending on which
-configuration you want to run. To use the bot's audio functionality you must
-have a Lavalink server set up and running (see the
-[prerequisites](#prerequisites)).
+configuration you want to run; and `<ARGS>` are the command line arguments for
+the program. The supported commands are:
+
+Command     | Description
+------------|------------
+`-c <PATH>` | The path to your config file. Defaults to `config.yml`.
+`--help`    | Displays a list of all command line arguments.
+`--version` | Displays information about the program's version.
 
 ## Adding the bot to a server
 Find your bot's Application ID. You can find this in your application's page
