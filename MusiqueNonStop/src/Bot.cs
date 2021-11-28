@@ -56,9 +56,10 @@ internal sealed class Bot {
             if (users.Count == 1 && users.First().Id == client.CurrentUser.Id)
                 await LeaveAsync(voice_channel.Guild);
         } catch (Exception exception) {
-            await SendExceptionAsync(
-                lava.GetPlayer(old_state.VoiceChannel.Guild).TextChannel,
-                exception
+            await Logger.LogAsync(
+                "Lavalink encountered an exception.",
+                severity:  LogSeverity.Error,
+                exception: exception
             );
         }            
     }
@@ -106,7 +107,7 @@ internal sealed class Bot {
                 var result = await commands
                     .ExecuteAsync(context, arg_pos, services);
                 if (!result.IsSuccess)
-                    await LogAsync(
+                    await Logger.LogAsync(
                         $"Failed to execute command: {result.ErrorReason}"
                     );
             }
@@ -114,21 +115,12 @@ internal sealed class Bot {
     }
 
     private async Task OnLogAsync(LogMessage message)
-        => await LogAsync(message.Message);
-
-    private async Task LogAsync(string message) {
-        Console.WriteLine(message);
-        await Task.CompletedTask;
-    }
-
-    private async Task<IUserMessage> SendExceptionAsync(
-        ITextChannel channel,
-        Exception    exception
-    ) => await channel.SendMessageAsync(
-        $"```Exception: {exception.Message}"
-        + $"\n{exception.StackTrace ?? string.Empty}"
-        + "```"
-    );
+        => await Logger.LogAsync(
+            message.Message,
+            source:    message.Source,
+            severity:  message.Severity,
+            exception: message.Exception
+        );
 
     public async Task JoinAsync(
         SocketGuildUser user,
@@ -147,16 +139,20 @@ internal sealed class Bot {
             return;
         }
 
-        if (user.VoiceChannel is not null) {
+        var voice = user.VoiceChannel;
+        if (voice is not null) {
             try {
                 await lava.JoinAsync(
-                    user.VoiceChannel,
+                    voice,
                     channel as ITextChannel
                 );
-                await reply($"Joined {user.VoiceChannel.Name}.");
+                await reply($"Joined {voice.Name}.");
             } catch (Exception exception) {
-                if (channel is not null)
-                    await SendExceptionAsync(channel, exception);
+                await Logger.LogAsync(
+                    $"Couldn't join voice channel \"{voice.Name}\".",
+                    severity:  LogSeverity.Error,
+                    exception: exception
+                );
             }
         } else {
             await reply("You must be in a voice channel.");
@@ -170,15 +166,16 @@ internal sealed class Bot {
     ) {
         var lava   = GetLavaNode();
         var player = lava.GetPlayer(guild);
+        var voice  = player.VoiceChannel;
         try {
             if (player.PlayerState is PlayerState.Playing)
                 await player.StopAsync();
-            await lava.LeaveAsync(player.VoiceChannel);
+            await lava.LeaveAsync(voice);
         } catch (InvalidOperationException exception) {
-            await LogAsync(exception.Message);
-            await SendExceptionAsync(
-                channel ?? player.TextChannel,
-                exception
+            await Logger.LogAsync(
+                $"Something went wrong leaving voice channel \"{voice.Name}\"",
+                severity:  LogSeverity.Error,
+                exception: exception
             );
         }
     }
@@ -223,8 +220,11 @@ internal sealed class Bot {
                 await reply($"Playing \"{track.Title}\"");
             }
         } catch (Exception exception) {
-            if (channel is not null)
-                await SendExceptionAsync(channel, exception);
+            await Logger.LogAsync(
+                "Something went wrong trying to play a song.",
+                severity:  LogSeverity.Error,
+                exception: exception
+            );
         }
     }
 
@@ -239,9 +239,11 @@ internal sealed class Bot {
             if (player.PlayerState is PlayerState.Playing)
                 await player.StopAsync();
         } catch (InvalidOperationException exception) {
-            await LogAsync(exception.Message);
-            if (channel is not null)
-                await SendExceptionAsync(channel, exception);
+            await Logger.LogAsync(
+                "Something went wrong trying to stop playing.",
+                severity:  LogSeverity.Error,
+                exception: exception
+            );
         }
     }
 
