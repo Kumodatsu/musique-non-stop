@@ -27,10 +27,12 @@ jobs:
         run:               dotnet restore
       - name:              Build
         working-directory: ./MusiqueNonStop
-        run:               dotnet build --configuration Release --no-restore
+        run:               dotnet publish -c Release --no-restore
       # Create zip file
       - name: Copy output files
         run:  >
+          mkdir musique-non-stop
+          
           cp -R
           ./MusiqueNonStop/bin/Release/net6.0/publish
           musique-non-stop/musique-non-stop
