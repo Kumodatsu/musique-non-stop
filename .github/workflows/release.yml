@@ -1,0 +1,81 @@
+name: Create release
+
+# Triggered when a tag is pushed whose name is a "v" followed by a semantic
+# version; for example, "v1.2.3"
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  # Create a release with downloadable binaries.
+  # The release notes are pulled from the relevant version's section in the
+  # changelog.
+  create_release:
+    name:    Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      # Build
+      - name: Setup .NET SDK 6.x
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: 6.x
+      - name:              Install dependencies
+        working-directory: ./MusiqueNonStop
+        run:               dotnet restore
+      - name:              Build
+        working-directory: ./MusiqueNonStop
+        run:               dotnet build --configuration Release --no-restore
+      # Create zip file
+      - name: Copy output files
+        run:  >
+          cp -R
+          ./MusiqueNonStop/bin/Release/net6.0/publish
+          musique-non-stop/musique-non-stop
+      - name:              Create zip file
+        uses:              papeloto/action-zip@v1
+        with:
+          files:     musique-non-stop
+          dest:      musique-non-stop.zip
+          recursive: true
+      # Parse changelog
+      - name: Get version name from tag
+        id:   tag_name
+        run:  echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+      - name: Get relevant changelog entry
+        id:   changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.tag_name.outputs.version }}
+          path:    ./CHANGELOG.md
+      - name: Format changelog entry
+        id:   format_changelog
+        uses: ashley-taylor/regex-property-action@1.2
+        with:
+          value:       ${{ steps.changelog.outputs.changes }}
+          regex:       "([^\n])(?:\n)([^-\n])"
+          flags:       g
+          replacement: "$1 $2"
+      # Release
+      - name: Create release
+        id:   create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name:     ${{ github.ref }}
+          release_name: Version ${{ steps.changelog.outputs.version }}
+          body:         ${{ steps.format_changelog.outputs.value }}
+          draft:        false
+          prerelease:   false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url:         ${{ steps.create_release.outputs.upload_url }}
+          asset_path:         musique-non-stop.zip
+          asset_name:         musique-non-stop.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
