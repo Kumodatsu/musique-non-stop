@@ -7,8 +7,10 @@ repository's root folder (that is, the folder that contains this README file)
 unless otherwise specified.
 
 ### Prerequisites
-To build and run this project you need the following:
-- [.NET SDK version 6.0.0][1]  or greater.
+To run this project you need the following:
+- To build the source code, you need [.NET SDK version 6.0.0][1] or greater. If
+you don't wanto to build the code yourself (or don't know what that means), you
+can also simply [download the program][5].
 - You need a Discord bot token. If you don't have one yet, [create a new
 Discord application][2] and add a bot to it.
 - For the bot to play any audio, you need to run a [Lavalink][3] server.
@@ -33,6 +35,8 @@ command-prefix: //
 ```
 
 ### Building
+Skip this part if you downloaded the program.
+
 Run the following command from the `MusiqueNonStop` folder:
 
     dotnet build -c <CONFIGURATION>
@@ -104,3 +108,4 @@ be selected.
 [2]: <https://discord.com/developers/applications>
 [3]: <https://github.com/freyacodes/Lavalink>
 [4]: <https://yaml.org/>
+[5]: <https://github.com/Kumodatsu/musique-non-stop/releases/latest>
