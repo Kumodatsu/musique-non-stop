@@ -9,7 +9,7 @@ unless otherwise specified.
 ### Prerequisites
 To run this project you need the following:
 - To build the source code, you need [.NET SDK version 6.0.0][1] or greater. If
-you don't wanto to build the code yourself (or don't know what that means), you
+you don't want to build the code yourself (or don't know what that means), you
 can also simply [download the program][5].
 - You need a Discord bot token. If you don't have one yet, [create a new
 Discord application][2] and add a bot to it.
