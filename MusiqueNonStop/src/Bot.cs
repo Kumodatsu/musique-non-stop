@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,37 +34,6 @@ internal sealed class Bot {
         lava.OnTrackException        += OnTrackExceptionAsync;
     }
 
-    private async Task OnTrackExceptionAsync(TrackExceptionEventArgs arg) {
-        var channel = arg.Player.TextChannel;
-        await channel.SendMessageAsync(
-            $"Something went went wrong:\n{arg.ErrorMessage}"
-        );
-    }
-
-    private async Task OnUserVoiceStateUpdatedAsync(
-        SocketUser       user,
-        SocketVoiceState old_state,
-        SocketVoiceState new_state
-    ) {
-        var client = GetClient();
-        var lava   = GetLavaNode();
-        try {
-            var voice_channel = old_state.VoiceChannel;
-            if (voice_channel is null)
-                return;
-            var users = voice_channel.Users;
-            // Make the bot leave the voice chat when alone
-            if (users.Count == 1 && users.First().Id == client.CurrentUser.Id)
-                await LeaveAsync(voice_channel.Guild);
-        } catch (Exception exception) {
-            await Logger.LogAsync(
-                "Lavalink encountered an exception.",
-                severity:  LogSeverity.Error,
-                exception: exception
-            );
-        }            
-    }
-
     public async Task StartAsync() {
         var client   = GetClient();
         var config   = GetConfig();
@@ -73,6 +43,7 @@ internal sealed class Bot {
         await client.StartAsync();
     }
 
+    #region Services
     private IServiceProvider services;
 
     private DiscordSocketClient GetClient()
@@ -83,7 +54,9 @@ internal sealed class Bot {
         => services.GetRequiredService<CommandService>();
     private LavaNode GetLavaNode()
         => services.GetRequiredService<LavaNode>();
+    #endregion
 
+    #region Event Handlers
     private async Task OnReadyAsync() {
         var client = GetClient();
         var lava   = GetLavaNode();
@@ -93,14 +66,14 @@ internal sealed class Bot {
     }
 
     private async Task OnMessageReceivedAsync(SocketMessage sock_message) {
+        if (sock_message.Author.IsBot)
+            return;
         if (sock_message is SocketUserMessage msg) {
             var client   = GetClient();
             var config   = GetConfig();
             var commands = GetCommands();
 
             var context = new SocketCommandContext(client, msg);
-            if (msg.Author.IsBot)
-                return;
             int arg_pos = 0;
             if (msg.HasStringPrefix(config.CommandPrefix, ref arg_pos)) {
                 // The message is a command
@@ -122,116 +95,108 @@ internal sealed class Bot {
             exception: message.Exception
         );
 
-    public async Task JoinAsync(
-        SocketGuildUser user,
-        IGuild          guild,
-        ITextChannel?   channel = null
+    private async Task OnTrackExceptionAsync(TrackExceptionEventArgs arg) {
+        var channel = arg.Player.TextChannel;
+        await channel.SendMessageAsync(
+            $"Something went went wrong:\n{arg.ErrorMessage}"
+        );
+    }
+
+    private async Task OnUserVoiceStateUpdatedAsync(
+        SocketUser       user,
+        SocketVoiceState old_state,
+        SocketVoiceState new_state
     ) {
-        async Task reply(string msg) {
-            if (channel is not null)
-                await channel.SendMessageAsync(msg);
-        };
+        var client = GetClient();
+        var lava   = GetLavaNode();
+        try {
+            var voice_channel = old_state.VoiceChannel;
+            if (voice_channel is null)
+                return;
+            var users = voice_channel.Users;
+            // Make the bot leave the voice chat when alone
+            if (users.Count == 1 && users.First().Id == client.CurrentUser.Id)
+                await LeaveVoiceAsync(voice_channel.Guild);
+        } catch (Exception exception) {
+            await Logger.LogAsync(
+                "Lavalink encountered an exception.",
+                severity:  LogSeverity.Error,
+                exception: exception
+            );
+        }            
+    }
+    #endregion
 
+    public async Task JoinVoiceAsync(
+        IVoiceChannel voice,
+        ITextChannel? channel = null
+    ) {
         var lava = GetLavaNode();
-
-        if (lava.HasPlayer(guild)) {
-            await reply("I'm already in a voice channel.");
+        if (lava.HasPlayer(voice.Guild))
             return;
+        try {
+            await lava.JoinAsync(voice, channel);
+        } catch (Exception exception) {
+            await Logger.LogAsync(
+                $"Couldn't join voice channel \"{voice.Name}\".",
+                severity:  LogSeverity.Error,
+                exception: exception
+            );
         }
+    }
 
-        var voice = user.VoiceChannel;
-        if (voice is not null) {
+    public async Task LeaveVoiceAsync(IGuild guild) {
+        var lava = GetLavaNode();
+        if (lava.TryGetPlayer(guild, out var player)) {
+            if (player.PlayerState is PlayerState.Playing)
+                await player.StopAsync();
+            await lava.LeaveAsync(player.VoiceChannel);
+        }        
+    }
+
+    private async IAsyncEnumerable<LavaTrack> Search(string query) {
+        var lava = GetLavaNode();
+        var search_results
+            = Uri.IsWellFormedUriString(query, UriKind.Absolute)
+            ? await lava.SearchAsync(SearchType.Direct, query)
+            : await lava.SearchYouTubeAsync(query);
+        if (search_results.Status is SearchStatus.NoMatches)
+            yield break;
+        foreach (var track in search_results.Tracks)
+            yield return track;
+    }
+
+    public async Task PlayAsync(IGuild guild, string query) {
+        var lava = GetLavaNode();
+        if (lava.TryGetPlayer(guild, out var player)) {
             try {
-                await lava.JoinAsync(
-                    voice,
-                    channel as ITextChannel
-                );
-                await reply($"Joined {voice.Name}.");
+                var track = await Search(query).FirstOrDefaultAsync();
+                if (track is null)
+                    return;
+                if (
+                    player.Track is not null && player.PlayerState is
+                        PlayerState.Playing or PlayerState.Paused
+                ) {
+                    player.Queue.Enqueue(track);
+                } else {
+                    if (player.TextChannel is not null)
+                        await player.TextChannel
+                            .SendMessageAsync($"Now playing: {track.Title}");
+                    await player.PlayAsync(track);
+                }
             } catch (Exception exception) {
                 await Logger.LogAsync(
-                    $"Couldn't join voice channel \"{voice.Name}\".",
+                    "Something went wrong trying to play a song.",
                     severity:  LogSeverity.Error,
                     exception: exception
                 );
             }
-        } else {
-            await reply("You must be in a voice channel.");
-            return;
-        }
-    }
-
-    public async Task LeaveAsync(
-        IGuild        guild,
-        ITextChannel? channel = null
-    ) {
-        var lava   = GetLavaNode();
-        var player = lava.GetPlayer(guild);
-        var voice  = player.VoiceChannel;
-        try {
-            if (player.PlayerState is PlayerState.Playing)
-                await player.StopAsync();
-            await lava.LeaveAsync(voice);
-        } catch (InvalidOperationException exception) {
-            await Logger.LogAsync(
-                $"Something went wrong leaving voice channel \"{voice.Name}\"",
-                severity:  LogSeverity.Error,
-                exception: exception
-            );
-        }
-    }
-
-    public async Task PlayAsync(
-        SocketGuildUser user,
-        IGuild guild,
-        string query,
-        ITextChannel? channel = null
-    ) {
-        async Task reply(string msg) {
-            if (channel is not null)
-                await channel.SendMessageAsync(msg);
-        };
-
-        if (user.VoiceChannel is null) {
-            await reply("You are not in a voice channel!");
-            return;
-        }
-        var lava = GetLavaNode();
-        if (!lava.HasPlayer(guild))
-            await JoinAsync(user, guild, channel);
-        try {
-            var player = lava.GetPlayer(guild);
-            var search_results
-                = Uri.IsWellFormedUriString(query, UriKind.Absolute)
-                ? await lava.SearchAsync(SearchType.Direct, query)
-                : await lava.SearchYouTubeAsync(query);
-            if (search_results.Status is SearchStatus.NoMatches) {
-                await reply("I couldn't find anything.");
-                return;
-            }
-            var track = search_results.Tracks.FirstOrDefault()!;
-            if (
-                player.Track is not null &&
-                player.PlayerState is PlayerState.Playing or PlayerState.Paused
-            ) {
-                player.Queue.Enqueue(track);
-                await reply($"Added \"{track.Title}\" to the queue.");
-            } else {
-                await player.PlayAsync(track);
-                await reply($"Playing \"{track.Title}\"");
-            }
-        } catch (Exception exception) {
-            await Logger.LogAsync(
-                "Something went wrong trying to play a song.",
-                severity:  LogSeverity.Error,
-                exception: exception
-            );
-        }
+        }        
     }
 
     public async Task StopPlayingAsync(
         SocketGuildUser user,
-        IGuild          guild,
-        ITextChannel?   channel = null
+        IGuild          guild
     ) {
         try {
             var lava = GetLavaNode();
@@ -249,10 +214,9 @@ internal sealed class Bot {
 
     public async Task SkipAsync(
         SocketGuildUser user,
-        IGuild          guild,
-        ITextChannel?   channel = null
+        IGuild          guild
     ) {
-        await StopPlayingAsync(user, guild, channel);
+        await StopPlayingAsync(user, guild);
         var lava   = GetLavaNode();
         var player = lava.GetPlayer(guild);
         await TryPlayNextAsync(player);
@@ -260,7 +224,8 @@ internal sealed class Bot {
 
     public async Task ShowQueueAsync(
         SocketGuildUser user,
-        IGuild          guild
+        IGuild          guild,
+        ITextChannel    output_channel
     ) {
         var lava    = GetLavaNode();
         var player  = lava.GetPlayer(guild);
@@ -274,14 +239,15 @@ internal sealed class Bot {
             foreach (var track in player.Queue)
                 builder.AppendLine($"- {track.Title}");
         }
-        await player.TextChannel.SendMessageAsync(builder.ToString());
+        await output_channel.SendMessageAsync(builder.ToString());
     }
 
     private async Task<bool> TryPlayNextAsync(LavaPlayer player) {
         if (player.Queue.TryDequeue(out var track)) {
-            await player.TextChannel.SendMessageAsync(
-                $"Next up: {track.Title}"
-            );
+            if (player.TextChannel is not null)
+                await player.TextChannel.SendMessageAsync(
+                    $"Next up: {track.Title}"
+                );
             await player.PlayAsync(track);
             return true;
         }
