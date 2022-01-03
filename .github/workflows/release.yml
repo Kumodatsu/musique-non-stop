@@ -21,7 +21,7 @@ jobs:
       - name: Setup .NET SDK 6.x
         uses: actions/setup-dotnet@v1.7.2
         with:
-          dotnet-version: 6.x
+          dotnet-version: 6.0.100
       - name:              Install dependencies
         working-directory: ./MusiqueNonStop
         run:               dotnet restore
@@ -35,7 +35,7 @@ jobs:
           ./MusiqueNonStop/bin/Release/net6.0/publish
           musique-non-stop/musique-non-stop
       - name:              Create zip file
-        uses:              papeloto/action-zip@v1
+        uses:              vimtor/action-zip@v1
         with:
           files:     musique-non-stop
           dest:      musique-non-stop.zip
