@@ -10,6 +10,8 @@ using Kumodatsu.MusiqueNonStop;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 
+Console.Title = "Musique Non Stop";
+
 await Parser.Default.ParseArguments<CommandLineArgs>(args)
     .MapResult(WithValidArgs, WithInvalidArgs);
 
