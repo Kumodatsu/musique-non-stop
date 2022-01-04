@@ -7,41 +7,19 @@ on:
     tags:
       - v*
 
+# Create a release with downloadable binaries for all target platforms.
+# The release notes are pulled from the relevant version's section in the
+# changelog.
 jobs:
-  # Create a release with downloadable binaries.
-  # The release notes are pulled from the relevant version's section in the
-  # changelog.
-  create_release:
+  # Create the release
+  create-release:
     name:    Create release
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      # Build
-      - name: Setup .NET SDK 6.x
-        uses: actions/setup-dotnet@v1.7.2
-        with:
-          dotnet-version: 6.0.100
-      - name:              Install dependencies
-        working-directory: ./MusiqueNonStop
-        run:               dotnet restore
-      - name:              Build
-        working-directory: ./MusiqueNonStop
-        run:               dotnet publish -c Release --no-restore
-      # Create zip file
-      - name: Copy output files
-        run:  >
-          mkdir musique-non-stop
-          
-          cp -R
-          ./MusiqueNonStop/bin/Release/net6.0/publish
-          musique-non-stop/musique-non-stop
-      - name:              Create zip file
-        uses:              vimtor/action-zip@v1
-        with:
-          files:     musique-non-stop
-          dest:      musique-non-stop.zip
-          recursive: true
       # Parse changelog
       - name: Get version name from tag
         id:   tag_name
@@ -60,7 +38,7 @@ jobs:
           regex:       "([^\n])(?:\n)([^-\n])"
           flags:       g
           replacement: "$1 $2"
-      # Release
+      # Create the release
       - name: Create release
         id:   create_release
         uses: actions/create-release@v1
@@ -72,12 +50,52 @@ jobs:
           prerelease:   false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Build the program for all target platforms
+  build:
+    name:  Build
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["win-x86", "win-x64", "linux-x64", "osx-x64"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup .NET SDK 6.x
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: 6.0.100
+      - name:              Install dependencies
+        working-directory: ./MusiqueNonStop
+        run:               dotnet restore
+      - name:              Build
+        working-directory: ./MusiqueNonStop
+        run:               >
+          dotnet publish
+          --configuration Release
+          --runtime ${{ matrix.os }}
+          --self-contained true
+          --no-restore
+      - name: Copy output files
+        run:  >
+          mkdir musique-non-stop-${{ matrix.os }}
+
+          cp -R
+          ./MusiqueNonStop/bin/Release/net6.0/${{ matrix.os }}/publish
+          musique-non-stop-${{ matrix.os }}/musique-non-stop
+      - name: Create zip file
+        uses: vimtor/action-zip@v1
+        with:
+          files:     musique-non-stop-${{ matrix.os }}
+          dest:      musique-non-stop-${{ matrix.os }}.zip
+          recursive: true
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
         with:
-          upload_url:         ${{ steps.create_release.outputs.upload_url }}
-          asset_path:         musique-non-stop.zip
-          asset_name:         musique-non-stop.zip
+          upload_url:         ${{ needs.create-release.outputs.upload_url }}
+          asset_path:         musique-non-stop-${{ matrix.os }}.zip
+          asset_name:         musique-non-stop-${{ matrix.os }}.zip
           asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
