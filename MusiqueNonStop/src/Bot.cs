@@ -62,7 +62,6 @@ internal sealed class Bot {
         var lava   = GetLavaNode();
         if (!lava.IsConnected)
             await lava.ConnectAsync();
-        await client.SetStatusAsync(UserStatus.Online);
     }
 
     private async Task OnMessageReceivedAsync(SocketMessage sock_message) {

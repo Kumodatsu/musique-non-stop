@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommandLine;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Kumodatsu.MusiqueNonStop;
@@ -34,7 +35,9 @@ async Task WithValidArgs(CommandLineArgs args) {
     }
 
     IServiceProvider services = new ServiceCollection()
-        .AddSingleton<DiscordSocketClient>()
+        .AddSingleton<DiscordSocketClient>(new DiscordSocketClient(new () {
+            GatewayIntents = GatewayIntents.AllUnprivileged
+        }))
         .AddSingleton<CommandService>()
         .AddSingleton(config)
         .AddLavaNode(config => config.SelfDeaf = false)
