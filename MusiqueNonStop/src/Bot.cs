@@ -19,6 +19,9 @@ internal sealed class Bot {
     public static Bot Instance => instance!;
     private static Bot? instance;
 
+    private IThreadChannel? song_request_thread = null;
+    private IUserMessage?   song_menu           = null;
+
     public Bot(IServiceProvider services) {
         instance = this;
 
@@ -30,6 +33,7 @@ internal sealed class Bot {
         client.MessageReceived       += OnMessageReceivedAsync;
         client.Log                   += OnLogAsync;
         client.UserVoiceStateUpdated += OnUserVoiceStateUpdatedAsync;
+        client.ButtonExecuted        += OnButtonExecuted;
         lava.OnTrackEnded            += OnTrackEndedAsync;
         lava.OnTrackException        += OnTrackExceptionAsync;
     }
@@ -41,6 +45,45 @@ internal sealed class Bot {
         await commands.AddModuleAsync<Commands>(services);
         await client.LoginAsync(TokenType.Bot, config.Token);
         await client.StartAsync();
+    }
+
+    public async Task ButtonTestAsync(
+        IGuildUser   user,
+        IGuild       guild,
+        ITextChannel channel
+    ) {
+        song_menu = await channel.SendMessageAsync(
+            embed:      new EmbedBuilder().WithTitle("Setlist").Build(),
+            components: new ComponentBuilder()
+                .WithButton(
+                    label:    "Stop",
+                    emote:    new Emoji("⏹️"),
+                    style:    ButtonStyle.Danger,
+                    customId: "stop"
+                )
+                .WithButton(
+                    label:    "Pause",
+                    emote:    new Emoji("⏸️"),
+                    style:    ButtonStyle.Primary,
+                    customId: "pause"
+                )
+                .WithButton(
+                    label:    "Skip",
+                    emote:    new Emoji("⏩"),
+                    style:    ButtonStyle.Primary,
+                    customId: "skip"
+                ).Build()
+        );
+        try {
+            song_request_thread = await channel.CreateThreadAsync(
+                name:    "Song requests",
+                type:    ThreadType.PublicThread,
+                message: song_menu
+            );
+        } catch (Exception e) {
+            await Logger.LogAsync("Caught exception", exception: e);
+            song_request_thread = await guild.GetThreadChannelAsync(song_menu.Id);
+        }
     }
 
     #region Services
@@ -82,6 +125,10 @@ internal sealed class Bot {
                     await Logger.LogAsync(
                         $"Failed to execute command: {result.ErrorReason}"
                     );
+            } else if (song_request_thread is not null &&
+                    msg.Channel.Id == song_request_thread.Id) {
+                var user = msg.Author as SocketGuildUser;
+                await PlayAsync(user!.Guild, msg.Content);
             }
         }
     }
@@ -93,6 +140,30 @@ internal sealed class Bot {
             severity:  message.Severity,
             exception: message.Exception
         );
+
+    private async Task OnButtonExecuted(SocketMessageComponent interaction) {
+        await interaction.DeferAsync(ephemeral: true);
+        var user    = interaction.User as SocketGuildUser;
+        var channel = interaction.Channel as ITextChannel;
+        var guild   = channel!.Guild;
+        switch (interaction.Data.CustomId) {
+            case "stop":
+                await StopPlayingAsync(user!, guild);
+                break;
+            case "skip":
+                await SkipAsync(user!, guild);
+                break;
+            case "pause":
+                await PauseAsync(guild);
+                break;
+            default:
+                await Logger.LogAsync(
+                    "Unknown interaction ID.",
+                    severity: LogSeverity.Warning
+                );
+                break;
+        }
+    }
 
     private async Task OnTrackExceptionAsync(TrackExceptionEventArgs arg) {
         var channel = arg.Player.TextChannel;
@@ -153,6 +224,22 @@ internal sealed class Bot {
         }        
     }
 
+    public async Task PauseAsync(IGuild guild) {
+        var lava = GetLavaNode();
+        if (lava.TryGetPlayer(guild, out var player)) {
+            switch (player.PlayerState) {
+                case PlayerState.Playing:
+                    await player.PauseAsync();
+                    break;
+                case PlayerState.Paused:
+                    await player.ResumeAsync();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
     private async IAsyncEnumerable<LavaTrack> Search(string query) {
         var lava = GetLavaNode();
         var search_results
@@ -172,16 +259,14 @@ internal sealed class Bot {
                 var track = await Search(query).FirstOrDefaultAsync();
                 if (track is null)
                     return;
+                player.Queue.Enqueue(track);
                 if (
-                    player.Track is not null && player.PlayerState is
-                        PlayerState.Playing or PlayerState.Paused
+                    player.Track is null || player.PlayerState is
+                        PlayerState.None or PlayerState.Stopped
                 ) {
-                    player.Queue.Enqueue(track);
+                    await TryPlayNextAsync(player);
                 } else {
-                    if (player.TextChannel is not null)
-                        await player.TextChannel
-                            .SendMessageAsync($"Now playing: {track.Title}");
-                    await player.PlayAsync(track);
+                    await UpdateSongMenu(player.Track, player.Queue);
                 }
             } catch (Exception exception) {
                 await Logger.LogAsync(
@@ -241,14 +326,38 @@ internal sealed class Bot {
         await output_channel.SendMessageAsync(builder.ToString());
     }
 
+    private async Task UpdateSongMenu(
+        LavaTrack?              current,
+        DefaultQueue<LavaTrack> queue
+    ) {
+        if (song_menu is null)
+            return;
+        var sb = new StringBuilder();
+        foreach (var enqueued in queue)
+            sb.AppendLine(enqueued.Title);
+        var queue_str = sb.ToString();
+        var eb = new EmbedBuilder().WithTitle("Setlist");
+        if (current is not null)
+            eb.AddField("Now Playing", current.Title);
+        if (!string.IsNullOrEmpty(queue_str))
+            eb.AddField("Upcoming", queue_str);
+        var embed = eb.Build();
+        await song_menu.ModifyAsync(properties =>
+            properties.Embed = embed
+        );
+    }
+
     private async Task<bool> TryPlayNextAsync(LavaPlayer player) {
         if (player.Queue.TryDequeue(out var track)) {
-            if (player.TextChannel is not null)
-                await player.TextChannel.SendMessageAsync(
-                    $"Next up: {track.Title}"
-                );
+            // if (player.TextChannel is not null)
+            //     await player.TextChannel.SendMessageAsync(
+            //         $"Now playing: {track.Title}"
+            //     );
+            await UpdateSongMenu(track, player.Queue);
             await player.PlayAsync(track);
             return true;
+        } else if (song_menu is not null) {
+            await UpdateSongMenu(null, player.Queue);
         }
         return false;
     }

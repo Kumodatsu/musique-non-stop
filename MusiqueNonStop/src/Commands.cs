@@ -13,6 +13,14 @@ public class Commands : ModuleBase<SocketCommandContext> {
     public Commands(IServiceProvider services)
         => this.services = services;
     
+    [Command("test")]
+    public async Task TestAsync()
+        => await Bot.Instance.ButtonTestAsync(
+            (Context.User as IGuildUser)!,
+            Context.Guild,
+            (Context.Channel as ITextChannel)!
+        );
+
     [Command("ping")]
     [Summary("Triggers a response from the bot. Useful to test latency.")]
     public async Task PingAsync() => await ReplyAsync("Pong!");
