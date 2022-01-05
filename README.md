@@ -1,5 +1,9 @@
 # Musique Non Stop
-Yet another Discord music bot.
+This is yet another Discord music bot. This one uses a different kind of
+interface than the usual slash commands, relying instead on buttons and threads
+to create a (hopefully) more fluent and intuitive interface.
+
+![song requests thread](./assets/song-requests-thread.png)
 
 ## Getting started
 All paths and commands presented in this section are relative to the
@@ -20,19 +24,20 @@ Lavalink itself requires Java. See its documentation on how to set up
 
 ### Configuration
 The bot requires a configuration with certain information to exist. The
-configuration file must be a [YAML][4] file containing the following keys:
+configuration file must be a [YAML][4] file containing the following key:
 
 Key            | Description
 ---------------|-------------
 token          | Your bot's token.
-command-prefix | The desired prefix for the bot's commands.
 
-Example of a valid configuration file:
+Example of a configuration file:
 
 ```yml
-token: your bot's token here
-command-prefix: //
+token: your token here
 ```
+
+If you run the program when no such file exists, it will be automatically
+generated for you; you'll then only have to open it and put your token in.
 
 ### Building
 Skip this part if you downloaded the program.
@@ -66,7 +71,7 @@ Find your bot's Application ID. You can find this in your application's page
 under the tab "General Information". In the following link, replace
 `<APPLICATION_ID>` with your Application ID:
 
-    https://discord.com/api/oauth2/authorize?client_id=<APPLICATION_ID>&permissions=274881137728&scope=bot
+    https://discord.com/api/oauth2/authorize?client_id=<APPLICATION_ID>&permissions=377960270912&scope=applications.commands%20bot
 
 Then open the resulting link in your web browser. This allows you to add the bot
 to a server on which you have the appropriate permissions, giving the bot the
@@ -75,34 +80,39 @@ permissions:
 
 - Read Messages/View Channels
 - Send Messages
+- Create Public Threads
+- Create Private Threads
 - Send Messages in Threads
-- Embed Links
-- Read Message History
 - Add Reactions
 - Connect
 - Speak
 
 ## Usage
-The commands listed in this section assume the command prefix (as set in the
-configuration) to be `//`; if you specified a different prefix, use that
-instead. Commands must be sent in a text channel that the bot can read, and some
-commands (notably the ones affecting the audio playing) require you to be in a
-voice chat that it can join.
+Commands must be sent in a text channel that the bot can read.
 
-Command           | Description
-------------------|------------
-`//help`          | Displays the list of commands. 
-`//ping`          | Triggers a response from the bot. Useful to test latency.
-`//join`          | Makes the bot join your voice channel.
-`//leave`         | Makes the bot leave its voice channel.
-`//play <QUERY>`  | Plays a song from a given query (see below).
-`//stop`          | Stops the currently playing song.
-`//skip`          | Skips the currently playing song.
-`//queue`         | Shows the current song queue.
+Command  | Description
+---------|------------
+`/join`  | Makes the bot join your voice channel.
+`/leave` | Makes the bot leave its voice channel.
 
-Queries must be either a direct YouTube URL to a video with the desired audio,
-or any text to search for on YouTube; in the latter case, the first result will
-be selected.
+To begin, enter a voice channel and use the `/join` command to make the bot join
+that channel. The bot will create a special message in the text channel in which
+the `/join` command was executed, which can be interacted with to play songs
+(see the image below). It is recommended to execute the command in a dedicated
+channel so the message doesn't get buried by other messages.
+
+![music player message](./assets/music-player-message.png)
+
+To request songs, send search queries or YouTube links in the created "Song
+requests" thread. Search results will be placed into the queue. If the queue is
+empty, the first search result will automatically be played.
+
+![song requests thread](./assets/song-requests-thread.png)
+
+Use the "Stop", "Pause" and "Skip" buttons to interact with the music player.
+Discord's UI allows you to have the channel with the player side by side with
+the song requests thread, allowing access to both the buttons and the song
+requests.
 
 [1]: <https://dotnet.microsoft.com/download/dotnet/6.0>
 [2]: <https://discord.com/developers/applications>
