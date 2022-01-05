@@ -98,8 +98,13 @@ internal class MusicPlayer {
                 await player.OnButtonExecutedAsync(interaction);
         };
         client.MessageReceived += async (msg) => {
-            if (msg.Channel.Id == request_thread.Id && !msg.Author.IsBot)
-                await player.OnRequestReceived(msg.Content);
+            if (
+                msg is IUserMessage user_msg
+                && user_msg.Channel.Id == request_thread.Id
+                && !user_msg.Author.IsBot
+            ) {
+                await player.OnRequestReceived(user_msg);
+            }
         };
         return player;
     }
@@ -136,8 +141,15 @@ internal class MusicPlayer {
             await TryPlayNextAsync();
     }
 
-    private async Task OnRequestReceived(string request)
-        => await RequestAsync(request);
+    private async Task OnRequestReceived(IUserMessage request) {
+        var success = await RequestAsync(request.Content);
+        if (success) {
+            await request.AddReactionAsync(new Emoji("✅"));
+        } else {
+            await request.AddReactionAsync(new Emoji("❌"));
+            await request.ReplyAsync("Sorry, something went wrong!");
+        }
+    }
     #endregion
 
     #region Public Interface
@@ -145,15 +157,16 @@ internal class MusicPlayer {
         => player.Track is null
         || player.PlayerState is PlayerState.None or PlayerState.Stopped;
 
-    public async Task RequestAsync(string request) {
+    public async Task<bool> RequestAsync(string request) {
         var track = await Search(request).FirstOrDefaultAsync();
         if (track is null)
-            return;
+            return false;
         player.Queue.Enqueue(track);
         if (IsIdle)
             await TryPlayNextAsync();
         else
             await UpdateSongMenu();
+        return true;
     }
 
     public async Task StopAsync() {
