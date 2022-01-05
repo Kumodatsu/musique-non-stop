@@ -4,13 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog][changelog], and this project adheres
 to [Semantic Versioning][semver].
 
-## [Unreleased]
+## [0.2.0][] - 2022-01-05
 ### Added
+- A license file. The addon is now licensed under version 3 of the GNU General
+Public License.
 - Illustrative images in the readme file.
 - If the configuration file doesn't exist yet, one of the correct format is now
 automatically generated; the user only has to put their token in it.
 - `ephemeral` key in the config file. This controls whether or not to delete the
 music player message when leaving the voice channel.
+- The bot now acknowledges song requests with a reaction and, if applicable, an
+error message.
+- "Shields" are added to the readme file in the repository to display the latest
+version and the license.
 
 ### Changed
 - Updated to Discord.NET version 3.1.0.
@@ -49,3 +55,4 @@ audio in a Discord voice chat. Includes the `ping`, `join`, `leave`, `play`,
 
 [0.1.0]: <https://github.com/Kumodatsu/musique-non-stop/releases/tag/v0.1.0>
 [0.1.1]: <https://github.com/Kumodatsu/musique-non-stop/releases/tag/v0.1.1>
+[0.2.0]: <https://github.com/Kumodatsu/musique-non-stop/releases/tag/v0.2.0>

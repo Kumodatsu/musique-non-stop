@@ -1,4 +1,7 @@
 # Musique Non Stop
+![version number][shield-version]
+![GNU GPLv3 license][shield-license]
+
 This is yet another Discord music bot. This one uses a different kind of
 interface than the usual slash commands, relying instead on buttons and threads
 to create a (hopefully) more fluent and intuitive interface.
@@ -80,14 +83,17 @@ to a server on which you have the appropriate permissions, giving the bot the
 minimal permissions it needs to function. The bot uses the following
 permissions:
 
-- Read Messages/View Channels
-- Send Messages
-- Create Public Threads
-- Create Private Threads
-- Send Messages in Threads
-- Add Reactions
-- Connect
-- Speak
+- **Read Messages/View Channels** to handle incoming song requests.
+- **Send Messages** to create the music player message and communicate problems.
+- **Create Public Threads** to create the song request thread.
+- **Create Private Threads**. This permission is not currently used, but the bot
+may optionally use a private song request thread on servers that support it in
+the future.
+- **Send Messages in Threads** to communicate problems in the song request
+thread.
+- **Add Reactions** to acknowledge song requests.
+- **Connect** to connect to a voice channel.
+- **Speak** to play music in a voice channel.
 
 ## Usage
 Commands must be sent in a text channel that the bot can read.
@@ -127,3 +133,7 @@ music player and the song request thread attached to it on its way out.
 [3]: <https://github.com/freyacodes/Lavalink>
 [4]: <https://yaml.org/>
 [5]: <https://github.com/Kumodatsu/musique-non-stop/releases/latest>
+
+
+[shield-version]: <https://img.shields.io/github/v/release/Kumodatsu/musique-non-stop?color=%2300aa00&include_prereleases&label=Version&style=flat-square>
+[shield-license]: <https://img.shields.io/github/license/Kumodatsu/musique-non-stop?label=License&style=flat-square>
