@@ -10,8 +10,7 @@ namespace Kumodatsu.MusiqueNonStop;
 
 public class Config {
     [Required]
-    public string Token         { get; set; } = "";
-    public string CommandPrefix { get; set; } = "//";
+    public string Token { get; set; } = "";
 
     public static Config FromFile(string path) {
         using var reader = new StreamReader(path);
