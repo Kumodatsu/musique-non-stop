@@ -84,6 +84,10 @@ jobs:
           cp -R
           ./MusiqueNonStop/bin/Release/net6.0/${{ matrix.os }}/publish
           musique-non-stop-${{ matrix.os }}/musique-non-stop
+
+          cp
+          ./LICENSE.md
+          musique-non-stop-${{ matrix.os }}/musique-non-stop/LICENSE.md
       - name: Create zip file
         uses: vimtor/action-zip@v1
         with:
