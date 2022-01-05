@@ -135,8 +135,7 @@ internal sealed class Bot {
     ) {
         var client = GetClient();
         var lava   = GetLavaNode();
-        var player = await MusicPlayer
-            .CreatePlayerAsync(voice, text, lava, client);
+        var player = await MusicPlayer.CreatePlayerAsync(voice, text, services);
         if (player is null) {
             await Logger.LogAsync(
                 $"Could not create player for voice channel: {voice.Name}",

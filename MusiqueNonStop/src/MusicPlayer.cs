@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 using Victoria.Enums;
 using Victoria.EventArgs;
@@ -17,29 +18,32 @@ internal class MusicPlayer {
     private IGuild         guild;
     private IThreadChannel request_thread;
     private IUserMessage   player_message;
-    private LavaNode       lava;
     private LavaPlayer     player;
 
+    private IServiceProvider services;
+
     private MusicPlayer(
-        IGuild         guild,
-        IThreadChannel request_thread, 
-        IUserMessage   player_message,
-        LavaNode       lava
+        IGuild           guild,
+        IThreadChannel   request_thread, 
+        IUserMessage     player_message,
+        IServiceProvider services
     ) {
         this.guild          = guild;
         this.request_thread = request_thread;
         this.player_message = player_message;
-        this.lava           = lava;
-        this.player         = lava.GetPlayer(guild);
+        this.player         = services.GetRequiredService<LavaNode>()
+            .GetPlayer(guild);
+        this.services       = services;
     }
 
     public static async Task<MusicPlayer?> CreatePlayerAsync(
         IVoiceChannel       voice,
         ITextChannel        text,
-        LavaNode            lava,
-        DiscordSocketClient client
+        IServiceProvider    services
     ) {
-        var guild = voice.Guild;
+        var guild  = voice.Guild;
+        var lava   = services.GetRequiredService<LavaNode>();
+        var client = services.GetRequiredService<DiscordSocketClient>();
         if (lava.HasPlayer(guild))
             return null;
         try {
@@ -87,7 +91,7 @@ internal class MusicPlayer {
         var request_thread =
             await guild.GetThreadChannelAsync(player_message.Id);
         var player =
-            new MusicPlayer(guild, request_thread, player_message, lava);
+            new MusicPlayer(guild, request_thread, player_message, services);
         lava.OnTrackEnded      += player.OnTrackEndedAsync;
         client.ButtonExecuted  += async (interaction) => {
             if (interaction.Message.Id == player_message.Id)
@@ -177,13 +181,20 @@ internal class MusicPlayer {
     }
 
     public async Task Destroy() {
+        var lava   = services.GetRequiredService<LavaNode>();
+        var config = services.GetRequiredService<Config>();
         await StopAsync();
         await lava.LeaveAsync(player.VoiceChannel);
+        if (config.Ephemeral) {
+            await request_thread.DeleteAsync();
+            await player_message.DeleteAsync();
+        }
     }
     #endregion
 
     #region Private Methods
     private async IAsyncEnumerable<LavaTrack> Search(string query) {
+        var lava = services.GetRequiredService<LavaNode>();
         var search_results
             = Uri.IsWellFormedUriString(query, UriKind.Absolute)
             ? await lava.SearchAsync(SearchType.Direct, query)

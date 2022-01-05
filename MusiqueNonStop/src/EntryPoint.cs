@@ -36,7 +36,7 @@ async Task WithValidArgs(CommandLineArgs args) {
             return;
         }
     } else {
-        Config.ToFile(new () { Token = "your token here" }, args.ConfigPath);
+        Config.ToFile(new (), args.ConfigPath);
         Console.Out.WriteLine(
             $"The config file \"{args.ConfigPath}\" did not exist and has "
             +"been created. Please add the bot's token to the config "

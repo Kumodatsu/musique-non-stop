@@ -24,16 +24,18 @@ Lavalink itself requires Java. See its documentation on how to set up
 
 ### Configuration
 The bot requires a configuration with certain information to exist. The
-configuration file must be a [YAML][4] file containing the following key:
+configuration file must be a [YAML][4] file and can contain the following keys:
 
-Key            | Description
----------------|-------------
-token          | Your bot's token.
+Key       | Required | Description
+----------|----------|-------------
+token     | Yes      | Your bot's token.
+ephemeral | No       | If `yes`, the music player is deleted after the session.
 
 Example of a configuration file:
 
 ```yml
 token: your token here
+ephemeral: no
 ```
 
 If you run the program when no such file exists, it will be automatically
@@ -96,10 +98,11 @@ Command  | Description
 `/leave` | Makes the bot leave its voice channel.
 
 To begin, enter a voice channel and use the `/join` command to make the bot join
-that channel. The bot will create a special message in the text channel in which
-the `/join` command was executed, which can be interacted with to play songs
-(see the image below). It is recommended to execute the command in a dedicated
-channel so the message doesn't get buried by other messages.
+that channel. The bot will create a special message (which will be refered to as
+the _music player_) in the text channel in which the `/join` command was
+executed, which can be interacted with to play songs (see the image below). It
+is recommended to execute the command in a dedicated channel so the message
+doesn't get buried by other messages.
 
 ![music player message](./assets/music-player-message.png)
 
@@ -113,6 +116,11 @@ Use the "Stop", "Pause" and "Skip" buttons to interact with the music player.
 Discord's UI allows you to have the channel with the player side by side with
 the song requests thread, allowing access to both the buttons and the song
 requests.
+
+When the `/leave` command is used, or if the bot is left alone in the voice
+channel, the bot will leave and the music player will cease to work. If the
+`ephemeral` key in the config file is set to `yes`, the bot will delete the
+music player and the song request thread attached to it on its way out.
 
 [1]: <https://dotnet.microsoft.com/download/dotnet/6.0>
 [2]: <https://discord.com/developers/applications>

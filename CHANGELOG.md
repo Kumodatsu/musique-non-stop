@@ -9,6 +9,8 @@ to [Semantic Versioning][semver].
 - Illustrative images in the readme file.
 - If the configuration file doesn't exist yet, one of the correct format is now
 automatically generated; the user only has to put their token in it.
+- `ephemeral` key in the config file. This controls whether or not to delete the
+music player message when leaving the voice channel.
 
 ### Changed
 - Updated to Discord.NET version 3.1.0.
@@ -24,8 +26,8 @@ permissions.
 - Updated readme for the new changes.
 
 ### Removed
-- `command-prefix` in the config file. This no longer makes sense to have as the
-commands are now integrated with Discord's slash command system.
+- `command-prefix` key in the config file. This no longer makes sense to have as
+the commands are now integrated with Discord's slash command system.
 
 ## [0.1.1][] - 2022-01-04
 ### Added
