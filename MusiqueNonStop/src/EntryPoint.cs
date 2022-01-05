@@ -18,19 +18,31 @@ await Parser.Default.ParseArguments<CommandLineArgs>(args)
 
 async Task WithValidArgs(CommandLineArgs args) {
     Config config;
-    try {
-        config = Config.FromFile(args.ConfigPath);
-    } catch (FileNotFoundException) {
-        Console.Error.WriteLine(
-            $"The config file \"{args.ConfigPath}\" could not be found."
+
+    if (File.Exists(args.ConfigPath)) {
+        try {
+            config = Config.FromFile(args.ConfigPath);
+        } catch (IOException exception) {
+            Console.Error.WriteLine(
+                $"Something went wrong reading the config:\n{exception.Message}"
+            );
+            Exit(ExitCode.IOError);
+            return;
+        } catch (ParseException exception) {
+            Console.Error.WriteLine(
+                $"Something went wrong reading the config:\n{exception.Message}"
+            );
+            Exit(ExitCode.InvalidConfig);
+            return;
+        }
+    } else {
+        Config.ToFile(new () { Token = "your token here" }, args.ConfigPath);
+        Console.Out.WriteLine(
+            $"The config file \"{args.ConfigPath}\" did not exist and has "
+            +"been created. Please add the bot's token to the config "
+            +"file's 'token' field."
         );
-        Exit(ExitCode.InvalidCommandLineArgs);
-        return;
-    } catch (ParseException exception) {
-        Console.Error.WriteLine(
-            $"Something went wrong reading the config:\n{exception.Message}"
-        );
-        Exit(ExitCode.InvalidCommandLineArgs);
+        Exit(ExitCode.Success);
         return;
     }
 
@@ -66,5 +78,7 @@ void Exit(ExitCode exit_code) => Environment.Exit((int) exit_code);
 
 enum ExitCode {
     Success                = 0,
-    InvalidCommandLineArgs = 1
+    InvalidCommandLineArgs = 1,
+    IOError                = 2,
+    InvalidConfig          = 3
 }

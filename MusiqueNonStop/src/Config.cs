@@ -26,6 +26,14 @@ public class Config {
         }
         return config;
     }
+
+    public static void ToFile(Config config, string path) {
+        using var writer = new StreamWriter(path);
+        var serializer = new SerializerBuilder()
+            .WithNamingConvention(HyphenatedNamingConvention.Instance)
+            .Build();
+        serializer.Serialize(writer, config);
+    }
 }
 
 public class ParseException : Exception {
