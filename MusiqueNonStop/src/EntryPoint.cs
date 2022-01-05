@@ -48,7 +48,10 @@ async Task WithValidArgs(CommandLineArgs args) {
 
     IServiceProvider services = new ServiceCollection()
         .AddSingleton<DiscordSocketClient>(new DiscordSocketClient(new () {
-            GatewayIntents = GatewayIntents.AllUnprivileged
+            GatewayIntents
+                = GatewayIntents.GuildVoiceStates
+                | GatewayIntents.GuildMessages
+                | GatewayIntents.Guilds
         }))
         .AddSingleton<CommandService>()
         .AddSingleton(config)
