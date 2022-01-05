@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog][changelog], and this project adheres
 to [Semantic Versioning][semver].
 
+## [Unreleased]
+### Added
+- Illustrative images in the readme file.
+- If the configuration file doesn't exist yet, one of the correct format is now
+automatically generated; the user only has to put their token in it.
+
+### Changed
+- Updated to Discord.NET version 3.1.0.
+- The bot's interface now uses buttons and a thread for song requests, replacing
+most slash commands.
+- Commands that still exist now integrate with Discord's slash command system.
+- The bot now needs both the `applications.commands` scope in addition to the
+`bot` scope.
+- The bot now needs the `Create Public Threads` and `Create Private Threads`
+permissions.
+- The bot no longer needs the `Embed Links` and `Read Message History`
+permissions.
+- Updated readme for the new changes.
+
+### Removed
+- `command-prefix` in the config file. This no longer makes sense to have as the
+commands are now integrated with Discord's slash command system.
+
 ## [0.1.1][] - 2022-01-04
 ### Added
 - Releases will now include binaries for Windows, Linux and OSX target
